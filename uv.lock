@@ -644,7 +644,7 @@ wheels = [
 [[package]]
 name = "ind320-isachstevik"
 version = "0.1.0"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "flask" },
     { name = "ipykernel" },
