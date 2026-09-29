@@ -50,12 +50,17 @@ fig, ax = plt.subplots()
 month = df["date"].dt.to_period("M")
 subset = df[(month >= start_month) & (month <= end_month)]
 if choice == "All columns":
+    # the columns have very different scales, so normalize each to 0-1
+    # capacity_twh is constant, so its range is 0; use 1 instead to avoid dividing by zero
+    value_range = (subset[numeric_cols].max() - subset[numeric_cols].min()).replace(0, 1)
+    normalized = (subset[numeric_cols] - subset[numeric_cols].min()) / value_range
     for c in numeric_cols:
-        ax.plot(subset["date"], subset[c], label=c)
+        ax.plot(subset["date"], normalized[c], label=c)
     ax.legend()
+    ax.set_ylabel("Normalized value (0-1)")
 else:
     ax.plot(subset["date"], subset[choice])
+    ax.set_ylabel(choice)
 ax.set_xlabel("Date")
-ax.set_ylabel("Value")
 ax.set_title(f"Reservoir data — {area} — {choice} ({start_month} to {end_month})")
 st.pyplot(fig)
