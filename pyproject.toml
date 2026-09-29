@@ -1,7 +1,7 @@
 [project]
 name = "ind320-isachstevik"
 version = "0.1.0"
-description = IND320 project: Jupyter notebook and Streamlit app exploring NVE's weekly reservoir data for Norway
+description = "IND320 project: Jupyter notebook and Streamlit app exploring NVE's weekly reservoir data for Norway"
 readme = "README.md"
 authors = [
     { name = "Isach Stevik", email = "isach.stevik@nmbu.no" }
