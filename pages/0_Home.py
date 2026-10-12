@@ -1,14 +1,8 @@
 import streamlit as st
 import pandas as pd
+from data_utils import load_data
 
 st.set_page_config(page_title="Home", layout="wide")
-
-# reads the CSV file and returns a data frame sorted by area and date. The "area" column is created by combining the "omrType" and "omrnr" columns.
-@st.cache_data
-def load_data():
-    df = pd.read_csv("data/reservoirs.csv", parse_dates=["dato_Id"])
-    df["area"] = df["omrType"] + " " + df["omrnr"].astype(str)
-    return df.sort_values(["area", "dato_Id"])
 
 # the page content below is what streamlit shows when opening home.
 st.title("IND320 — Reservoir Data App")
@@ -17,13 +11,13 @@ df = load_data()
 norway = df[df["area"] == "NO 0"] # keep only the rows for Norway as a whole
 latest = norway.iloc[-1] # is the last row for Norway, which is the latest week
 # median fill ratio for the same week in earlier years
-same_week = norway[(norway["iso_uke"] == latest["iso_uke"]) & (norway["iso_aar"] < latest["iso_aar"])]
-median_same_week = same_week["fyllingsgrad"].median()
+same_week = norway[(norway["iso_week"] == latest["iso_week"]) & (norway["iso_year"] < latest["iso_year"])]
+median_same_week = same_week["fill_ratio"].median()
 
 st.write(
     "This app looks at how full Norway's hydropower reservoirs are. The data is weekly reservoir "
     "statistics from NVE (Norwegian Water Resources and Energy Directorate): for every week since "
-    f"{df['dato_Id'].min():%Y}, it gives how much energy is stored in the reservoirs, both in TWh and "
+    f"{df['date'].min():%Y}, it gives how much energy is stored in the reservoirs, both in TWh and "
     "as a share of the total capacity."
 )
 st.write(
@@ -35,13 +29,13 @@ st.write(
 st.subheader("Key numbers")
 c1, c2, c3, c4 = st.columns(4)
 c1.metric(
-    f"Norway fill ratio, week {latest['iso_uke']} {latest['iso_aar']}",
-    f"{latest['fyllingsgrad']:.1%}",
-    f"{(latest['fyllingsgrad'] - median_same_week) * 100:+.1f} pp vs. median",
+    f"Norway fill ratio, week {latest['iso_week']} {latest['iso_year']}",
+    f"{latest['fill_ratio']:.1%}",
+    f"{(latest['fill_ratio'] - median_same_week) * 100:+.1f} pp vs. median",
 )
-c2.metric("Total capacity", f"{latest['kapasitet_TWh']:.1f} TWh")
-c3.metric("Period", f"{df['dato_Id'].min():%Y}–{df['dato_Id'].max():%Y}")
-c4.metric("Rows", f"{len(df):,}", f"{df['area'].nunique()} areas, {norway['dato_Id'].nunique():,} weeks", delta_color="off")
+c2.metric("Total capacity", f"{latest['capacity_twh']:.1f} TWh")
+c3.metric("Period", f"{df['date'].min():%Y}–{df['date'].max():%Y}")
+c4.metric("Rows", f"{len(df):,}", f"{df['area'].nunique()} areas, {norway['date'].nunique():,} weeks", delta_color="off")
 
 st.subheader("Areas")
 st.write(
@@ -56,11 +50,11 @@ st.markdown(
 )
 
 summary = df.groupby("area").agg(
-    capacity_twh=("kapasitet_TWh", "first"),
-    mean_fill_ratio=("fyllingsgrad", "mean"),
-    min_fill_ratio=("fyllingsgrad", "min"),
-    max_fill_ratio=("fyllingsgrad", "max"),
-    latest_fill_ratio=("fyllingsgrad", "last"),
+    capacity_twh=("capacity_twh", "first"),
+    mean_fill_ratio=("fill_ratio", "mean"),
+    min_fill_ratio=("fill_ratio", "min"),
+    max_fill_ratio=("fill_ratio", "max"),
+    latest_fill_ratio=("fill_ratio", "last"),
 )
 st.dataframe(
     summary,
