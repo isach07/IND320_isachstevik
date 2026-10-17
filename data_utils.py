@@ -1,5 +1,10 @@
+from pathlib import Path
+
 import streamlit as st
 import pandas as pd
+
+# path to the CSV, relative to this file so it works from both the app and the notebooks.
+DATA_FILE = Path(__file__).parent / "data" / "reservoirs.csv"
 
 # the original Norwegian column names and the English names used in the app.
 COLUMN_NAMES = {
@@ -24,7 +29,14 @@ ID_COLS = ["area_number", "iso_year", "iso_week"]
 # returns a data frame with English column names, sorted by area and date.
 @st.cache_data
 def load_data():
-    df = pd.read_csv("data/reservoirs.csv", parse_dates=["dato_Id"]) # turns the "dato_Id" column into a datetime column
+    return clean_data(pd.read_csv(DATA_FILE))
+
+
+# cleans raw reservoir data with the original Norwegian columns, from the CSV or the NVE API.
+# returns a data frame with English column names, sorted by area and date.
+def clean_data(df):
+    df = df.copy()
+    df["dato_Id"] = pd.to_datetime(df["dato_Id"]) # turns the "dato_Id" column into a datetime column
     df["neste_Publiseringsdato"] = pd.to_datetime(
         df["neste_Publiseringsdato"].replace("0001-01-01T00:00:00", None) # replace the invalid date with None, which will be converted to NaT
     )
