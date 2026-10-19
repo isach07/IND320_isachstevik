@@ -1,5 +1,5 @@
-import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 from data_utils import AREA_TYPES, load_data, numeric_columns
@@ -49,17 +49,18 @@ plot_tab, table_tab = st.tabs(["Plot", "Table"])
 
 # ---- plot: one line per area number ----
 with plot_tab:
-    fig, ax = plt.subplots(figsize=(12, 5))
-    for area, g in df.groupby("area"):
-        ax.plot(g["date"], g[column], label=area, linewidth=1)
+    fig = px.line(
+        df,
+        x="date",
+        y=column,
+        color="area",
+        title=f"{column} for {AREA_TYPES[area_type]}, {start_year}–{end_year}",
+        labels={"date": "Date", "area": "Area"},
+    )
     if is_ratio:
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda y, _: f"{y:.0%}"))
-    ax.set_title(f"{column} for {AREA_TYPES[area_type]}, {start_year}–{end_year}")
-    ax.set_xlabel("Date")
-    ax.set_ylabel(column)
-    ax.legend(loc="upper left", bbox_to_anchor=(1, 1))
-    plt.tight_layout()
-    st.pyplot(fig)
+        fig.update_yaxes(tickformat=".0%", hoverformat=".1%")
+    fig.update_layout(hovermode="x unified")  # hovering shows every area's value for that week
+    st.plotly_chart(fig)
 
 # ---- table: one row per area number, with the trend drawn inside the table ----
 with table_tab:

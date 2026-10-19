@@ -1,7 +1,7 @@
 import calendar
 
-import matplotlib.pyplot as plt
 import pandas as pd
+import plotly.express as px
 import streamlit as st
 
 from mongo_utils import load_crossborder
@@ -33,15 +33,17 @@ with left:
     one_year = df[(df["connection"] == connection) & (df["date"].dt.year == year)]
     totals_twh = one_year.groupby("direction")["flow_mwh"].sum() / 1e6  # MWh -> TWh
 
-    fig, ax = plt.subplots(figsize=(5, 5))
-    ax.pie(
-        totals_twh,
-        labels=[f"{d}\n{v:.2f} TWh" for d, v in totals_twh.items()],
-        autopct="%1.0f%%",
-        startangle=90,
+    fig = px.pie(
+        names=totals_twh.index,
+        values=totals_twh.values,
+        title=f"{connection}, {year}",
     )
-    ax.set_title(f"{connection}, {year}")
-    st.pyplot(fig)
+    fig.update_traces(
+        texttemplate="%{label}<br>%{value:.2f} TWh<br>%{percent}",
+        hovertemplate="%{label}: %{value:.2f} TWh<extra></extra>",
+        showlegend=False,
+    )
+    st.plotly_chart(fig)
 
     # the current year is not over, so its total only covers the days so far
     last_day = one_year["date"].max()
@@ -59,28 +61,51 @@ with right:
         default=[1],
         format_func=lambda m: calendar.month_abbr[m],
     )
+    # filter which flows are drawn: all connections or just one, in one or both directions
+    line_connection = st.selectbox("Connection", ["All connections"] + connections, key="line_connection")
+    chosen_connections = connections if line_connection == "All connections" else [line_connection]
+    directions = st.segmented_control(
+        "Direction",
+        options=["out of Norway", "into Norway"],
+        selection_mode="multi",
+        default=["out of Norway", "into Norway"],
+    )
 
     if not months:
         st.info("Choose at least one month.")
+    elif not directions:
+        st.info("Choose at least one direction.")
     else:
-        fig, ax = plt.subplots(figsize=(7, 5))
         year_days = pd.date_range(f"{year}-01-01", f"{year}-12-31", freq="D")
-        for (conn, direction), g in df[df["date"].dt.year == year].groupby(["connection", "direction"]):
+        flows = df[
+            (df["date"].dt.year == year)
+            & df["connection"].isin(chosen_connections)
+            & df["direction"].isin(directions)
+        ]
+        lines = []
+        for (conn, direction), g in flows.groupby(["connection", "direction"]):
             # put the values on a full calendar and blank out the months that are not chosen,
             # so the line breaks at the gaps instead of joining e.g. January straight to March
             s = g.set_index("date")["flow_mwh"].reindex(year_days)
             s[~s.index.month.isin(months)] = float("nan")
-            ax.plot(s.index, s / 1000, label=f"{conn} ({direction})", linewidth=1)
+            lines.append(pd.DataFrame({"date": s.index, "flow_gwh": s.values / 1000, "flow": f"{conn} ({direction})"}))
 
-        # zoom the x-axis to the chosen months
-        first, last = min(months), max(months)
-        ax.set_xlim(pd.Timestamp(year, first, 1), pd.Timestamp(year, last, 1) + pd.offsets.MonthEnd(1))
-        ax.set_title(f"Daily cross-border flow, {year}")
-        ax.set_xlabel("Date")
-        ax.set_ylabel("Flow (GWh per day)")
-        ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=3, fontsize=7)
-        fig.autofmt_xdate()
-        st.pyplot(fig)
+        if not lines:
+            st.info(f"No data for this choice in {year}.")
+        else:
+            fig = px.line(
+                pd.concat(lines),
+                x="date",
+                y="flow_gwh",
+                color="flow",
+                title=f"Daily cross-border flow, {year}",
+                labels={"date": "Date", "flow_gwh": "Flow (GWh per day)", "flow": "Flow"},
+            )
+            # zoom the x-axis to the chosen months, and put the legend below the plot
+            first, last = min(months), max(months)
+            fig.update_xaxes(range=[pd.Timestamp(year, first, 1), pd.Timestamp(year, last, 1) + pd.offsets.MonthEnd(1)])
+            fig.update_layout(legend=dict(orientation="h", yanchor="top", y=-0.2))
+            st.plotly_chart(fig)
 
 # ---- below the columns: where the data comes from ----
 with st.expander("About the data"):
