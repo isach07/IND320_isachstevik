@@ -23,11 +23,24 @@ COLUMN_NAMES = {
 # area_number, iso_year and iso_week are identifiers, not measurements
 ID_COLS = ["area_number", "iso_year", "iso_week"]
 
-# the three ways the API splits up Norway, used by the radio buttons in the app
+# the three ways the API splits up Norway
 AREA_TYPES = {
     "EL": "Price areas (EL 1–5)",
     "NO": "Norway as a whole (NO 0)",
     "VASS": "Regional areas (VASS 1–3)",
+}
+
+# every area, for the area selector in the sidebar (shared by all pages)
+AREAS = {
+    "NO 0": "NO 0 — Norway",
+    "EL 1": "EL 1 — Southeast (NO1)",
+    "EL 2": "EL 2 — Southwest (NO2)",
+    "EL 3": "EL 3 — Central (NO3)",
+    "EL 4": "EL 4 — North (NO4)",
+    "EL 5": "EL 5 — West (NO5)",
+    "VASS 1": "VASS 1 — East",
+    "VASS 2": "VASS 2 — West",
+    "VASS 3": "VASS 3 — North",
 }
 
 

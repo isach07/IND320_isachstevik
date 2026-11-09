@@ -1,0 +1,23 @@
+# Colours for the app: cream white background, dark grey text and sidebar, and blue for
+# buttons, sliders, tabs, links and other details. All text has at least 4.5:1 contrast.
+
+[theme]
+base = "light"
+primaryColor = "#2B6CB0"              # blue: buttons, sliders, selected tabs, toggles
+backgroundColor = "#FAF6EE"           # cream white
+secondaryBackgroundColor = "#EFE9DC"  # darker cream: input fields, code, expanders
+textColor = "#2E3338"                 # dark grey
+linkColor = "#2B6CB0"
+borderColor = "#DDD5C4"
+dataframeHeaderBackgroundColor = "#EFE9DC"
+blueColor = "#2B6CB0"
+baseRadius = "0.5rem"
+# colours for charts that do not set their own (e.g. the reservoir lines), blue first
+chartCategoricalColors = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6"]
+
+[theme.sidebar]
+backgroundColor = "#2E3338"           # dark grey
+secondaryBackgroundColor = "#3D444B"  # slightly lighter grey for the area selector
+textColor = "#FAF6EE"                 # cream text
+primaryColor = "#7DB3EA"              # lighter blue, so it shows on the dark grey
+borderColor = "#4A5158"

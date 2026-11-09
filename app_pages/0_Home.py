@@ -5,7 +5,14 @@ from data_utils import load_data
 st.set_page_config(page_title="Home", layout="wide")
 
 # the page content below is what streamlit shows when opening home.
-st.title("IND320 — Reservoir Data App")
+# HTML is used for the title because st.title cannot underline a single word;
+# the blue line under "better" uses the same blue as the theme (.streamlit/config.toml).
+st.markdown(
+    '<h1>Knowing data – unlocks '
+    '<span style="border-bottom: 0.12em solid #2B6CB0; padding-bottom: 0.02em;">better</span> '
+    'decisions</h1>',
+    unsafe_allow_html=True,
+)
 
 df = load_data()
 norway = df[df["area"] == "NO 0"] # keep only the rows for Norway as a whole

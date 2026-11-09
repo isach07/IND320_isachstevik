@@ -11,26 +11,20 @@ st.set_page_config(page_title="Reservoirs", layout="wide")
 st.title("Reservoir fill levels")
 
 # ---- controls ----
-left, right = st.columns([1, 2])
+# the area comes from the global selector in the sidebar (see app.py). All areas of the
+# same type are shown, so the chosen area can be compared with the others.
+area = st.session_state["area"]
+area_type = area.split()[0]
 
-with left:
-    # radio buttons choose which way Norway is split up; every area number of that type is shown
-    area_type = st.radio(
-        "Area type",
-        options=list(AREA_TYPES),
-        format_func=lambda t: AREA_TYPES[t],
-    )
-
-with right:
-    # the slider decides which years are loaded from the NVE API.
-    # the range is fixed (NVE's data starts in 1995), so it can be drawn before any download.
-    this_year = pd.Timestamp.now().year
-    start_year, end_year = st.slider(
-        "Years to download",
-        min_value=1995,
-        max_value=this_year,
-        value=(this_year - 4, this_year),  # last five years by default
-    )
+# the slider decides which years are loaded from the NVE API.
+# the range is fixed (NVE's data starts in 1995), so it can be drawn before any download.
+this_year = pd.Timestamp.now().year
+start_year, end_year = st.slider(
+    "Years to download",
+    min_value=1995,
+    max_value=this_year,
+    value=(this_year - 4, this_year),  # last five years by default
+)
 
 # only the chosen years are loaded (see load_data in data_utils.py)
 df = load_data(start_year, end_year)
@@ -59,6 +53,8 @@ with plot_tab:
     )
     if is_ratio:
         fig.update_yaxes(tickformat=".0%", hoverformat=".1%")
+    # the area chosen in the sidebar is drawn thicker than the others
+    fig.for_each_trace(lambda t: t.update(line_width=3 if t.name == area else 1.2))
     fig.update_layout(hovermode="x unified")  # hovering shows every area's value for that week
     st.plotly_chart(fig)
 
