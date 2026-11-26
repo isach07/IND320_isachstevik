@@ -1,6 +1,6 @@
 import streamlit as st
 
-from data_utils import AREAS
+from utils.data_utils import AREAS
 
 st.set_page_config(page_title="IND320 Reservoirs", layout="wide")
 
@@ -17,13 +17,20 @@ with st.sidebar:
         help="Used by the reservoir, weather and analysis pages.",
     )
 
-# this builds the navigation sidebar with links to the other pages.
-pg = st.navigation([
-    st.Page("app_pages/0_Home.py", title="Home", default=True),
-    st.Page("app_pages/1_Reservoirs.py", title="Reservoirs"),  # replaces "Data Table" and "Plot" from part 1
-    st.Page("app_pages/2_Cross_Border.py", title="Cross-border flows"),
-    st.Page("app_pages/4_Weather.py", title="Weather"),
-    st.Page("app_pages/5_STL_Spectrogram.py", title="STL and spectrogram"),
-    st.Page("app_pages/6_Outliers.py", title="Outliers and anomalies"),
-])
+# this builds the navigation sidebar. On top, without a header: the front page and the two main
+# tools (the map and the forecast). Below, "Explore the data" has one page per data source. Each of
+# them has the same tabs (explore the raw data, STL and spectrogram, outliers and anomalies), so
+# the sources can be compared in the same way.
+pg = st.navigation({
+    "": [
+        st.Page("app_pages/0_Home.py", title="Home", icon=":material/home:", default=True),
+        st.Page("app_pages/7_Map.py", title="Map", icon=":material/map:"),
+        st.Page("app_pages/9_Forecast.py", title="Forecast", icon=":material/trending_up:"),
+    ],
+    "Explore the data": [
+        st.Page("app_pages/1_Reservoirs.py", title="Reservoirs", icon=":material/water_drop:"),
+        st.Page("app_pages/4_Weather.py", title="Weather", icon=":material/partly_cloudy_day:"),
+        st.Page("app_pages/2_Cross_Border.py", title="Cross-border flows", icon=":material/swap_horiz:"),
+    ],
+})
 pg.run()

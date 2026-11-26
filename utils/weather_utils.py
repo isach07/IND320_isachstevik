@@ -6,7 +6,7 @@ import pandas as pd
 import requests
 import streamlit as st
 
-from mongo_utils import get_db
+from utils.mongo_utils import get_db
 
 # Daily ERA5 weather from Open-Meteo for the area chosen in the sidebar.
 # The download is a hidden part of the app: a page asks for (area, year), and anything not
@@ -16,8 +16,8 @@ from mongo_utils import get_db
 
 ERA5_URL = "https://archive-api.open-meteo.com/v1/archive"
 
-# the 1000 random locations from the part 3 notebook, with their EL and VASS area
-LOCATIONS_FILE = Path(__file__).parent / "Data" / "sample_locations.csv"
+# the random locations from the part 3 notebook: 1000 sampled for each region, with their EL and VASS area
+LOCATIONS_FILE = Path(__file__).parent.parent / "Data" / "sample_locations.csv"
 
 # one year for one location with 10 variables costs about 26 calls, so 20 locations cost
 # about 520. That stays under the limit of 600 calls per minute without any waiting.
@@ -45,15 +45,28 @@ def load_locations():
     return pd.read_csv(LOCATIONS_FILE, index_col="point_id")
 
 
-# the locations used for an area: a fixed random choice of up to MAX_LOCATIONS
+# the locations used for an area: a fixed random choice of up to MAX_LOCATIONS among the
+# 1000 locations the notebook sampled for that area
 def locations_for_area(area):
     locations = load_locations()
-    if area.startswith("EL"):
-        locations = locations[locations["el_area"] == area]
-    elif area.startswith("VASS"):
-        locations = locations[locations["vass_area"] == area]
-    # "NO 0" uses all of Norway
+    if area == "NO 0":
+        # all of Norway: the locations sampled for the five price areas cover the whole country
+        locations = locations[locations["sampled_for"].str.startswith("EL")]
+    else:
+        locations = locations[locations["sampled_for"] == area]
     return locations.sample(n=min(MAX_LOCATIONS, len(locations)), random_state=320).sort_index()
+
+
+# MongoDB filter for the stored documents of these locations. The coordinates are part of the
+# filter, so a document from an older sample with the same point_id is not used by mistake.
+def stored_filter(points, year):
+    return {
+        "year": year,
+        "$or": [
+            {"point_id": int(point_id), "lon": point["lon"], "lat": point["lat"]}
+            for point_id, point in points.iterrows()
+        ],
+    }
 
 
 # the last date ERA5 has data for
@@ -144,10 +157,7 @@ def ensure_weather(area, year):
     collection = get_db()["weather_daily"]
     stored = {
         doc["point_id"]
-        for doc in collection.find(
-            {"year": year, "end": str(end), "point_id": {"$in": [int(i) for i in points.index]}},
-            {"point_id": 1},
-        )
+        for doc in collection.find({**stored_filter(points, year), "end": str(end)}, {"point_id": 1})
     }
     todo = points[~points.index.isin(stored)]
     status = {"downloaded": 0, "stored": len(stored), "missing": 0, "message": None}
@@ -208,9 +218,7 @@ def ensure_weather(area, year):
 @st.cache_data(ttl=60 * 60, show_spinner="Loading weather from MongoDB...")
 def read_weather(area, year):
     points = locations_for_area(area)
-    docs = get_db()["weather_daily"].find(
-        {"year": year, "point_id": {"$in": [int(i) for i in points.index]}}, {"_id": 0}
-    )
+    docs = get_db()["weather_daily"].find(stored_filter(points, year), {"_id": 0})
     frames = []
     for doc in docs:
         daily = pd.DataFrame(doc["daily"]).rename(columns={"time": "date"})
@@ -221,3 +229,120 @@ def read_weather(area, year):
     weather = pd.concat(frames, ignore_index=True)
     weather["date"] = pd.to_datetime(weather["date"])
     return weather
+
+
+# The last `days` days of weather for an area, for the key numbers on the home page.
+# ERA5 is about a week behind, so this uses Open-Meteo's forecast API, which also has the
+# recent past (past_days). A month for a few locations costs 1 call each; cached for 6 hours.
+FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+RECENT_VARIABLES = ["temperature_2m_mean", "precipitation_sum", "snowfall_sum"]
+
+
+@st.cache_data(ttl=6 * 60 * 60, show_spinner="Loading recent weather from Open-Meteo...")
+def recent_weather(area, days=30, n_locations=5):
+    points = locations_for_area(area).head(n_locations)
+    resp = requests.get(FORECAST_URL, timeout=30, params={
+        "latitude": ",".join(str(lat) for lat in points["lat"]),
+        "longitude": ",".join(str(lon) for lon in points["lon"]),
+        "daily": ",".join(RECENT_VARIABLES),
+        "past_days": days,
+        "forecast_days": 0,  # only days that have happened
+        "timezone": "Europe/Oslo",
+    })
+    resp.raise_for_status()
+    add_calls(float(resp.headers.get("X-RateLimit-Cost", len(points))))
+    results = resp.json()
+    if isinstance(results, dict):
+        results = [results]
+    frames = [pd.DataFrame(r["daily"]) for r in results]
+    # one value per day: the average over the locations
+    daily = pd.concat(frames).groupby("time").mean()
+    daily.index = pd.to_datetime(daily.index)
+    return daily
+
+
+# Daily ERA5 weather for an area over a short period, for colouring the map. A few locations per
+# area are enough for an area average, and a period of a few weeks costs only a few calls per
+# location, so this is downloaded directly instead of a whole year as on the Weather page.
+# The past does not change, so the result is cached without a time limit.
+@st.cache_data(show_spinner=False, max_entries=500)
+def period_weather(area, start, end, n_locations=5):
+    points = locations_for_area(area).head(n_locations)
+    days = (end - start).days + 1
+    estimate = max(days / 14 * len(DAILY_VARIABLES) / 10, 1) * len(points)
+    if calls_used_today() + estimate > APP_DAILY_BUDGET:
+        raise RuntimeError("The app's daily budget for weather downloads is used up. Try again tomorrow.")
+    docs, cost = fetch_locations(points, start, end)
+    add_calls(cost)
+    frames = [pd.DataFrame(doc["daily"]) for doc in docs]
+    daily = pd.concat(frames).groupby("time").mean()  # average over the locations
+    daily.index = pd.to_datetime(daily.index)
+    return daily
+
+
+# Daily weather for a whole area and year as one average series, for the correlation page.
+# A correlation over many years needs many years of weather, so this uses only 5 locations per area
+# (about 130 calls per year instead of 520) and stores the area average in MongoDB, so each area
+# and year is only downloaded once. The current year is downloaded again when it is a week behind.
+AREA_LOCATIONS = 5
+
+
+def area_daily_weather(area, year):
+    start = date(year, 1, 1)
+    end = min(date(year, 12, 31), latest_era5_date())
+    if end < start:
+        return pd.DataFrame()
+    collection = get_db()["weather_area_daily"]
+    doc = collection.find_one({"area": area, "year": year, "n_locations": AREA_LOCATIONS})
+    if doc is None or (doc["end"] != str(end) and date.fromisoformat(doc["end"]) < end - timedelta(days=6)):
+        points = locations_for_area(area).head(AREA_LOCATIONS)
+        cost = max(((end - start).days + 1) / 14 * len(DAILY_VARIABLES) / 10, 1) * len(points)
+        if calls_used_today() + cost > APP_DAILY_BUDGET:
+            raise RuntimeError("The app's daily budget for weather downloads is used up. Try again tomorrow.")
+        try:
+            docs, cost = fetch_locations(points, start, end)
+        except requests.HTTPError as error:
+            # several years in a row can pass the limit of 600 calls per minute: wait and try once more
+            if error.response is None or error.response.status_code != 429 or "Minutely" not in error.response.text:
+                raise
+            with st.spinner("Open-Meteo allows 600 calls per minute. Waiting a minute before the next year..."):
+                time.sleep(61)
+            docs, cost = fetch_locations(points, start, end)
+        add_calls(cost)
+        daily = pd.concat(pd.DataFrame(d["daily"]) for d in docs).groupby("time").mean()
+        doc = {"area": area, "year": year, "n_locations": AREA_LOCATIONS, "end": str(end),
+               "daily": daily.reset_index().to_dict("list")}
+        collection.replace_one({"area": area, "year": year, "n_locations": AREA_LOCATIONS}, doc, upsert=True)
+    daily = pd.DataFrame(doc["daily"]).set_index("time")
+    daily.index = pd.to_datetime(daily.index)
+    return daily
+
+
+# weather properties per week for the correlation and forecast pages: the ERA5 variable and how the
+# daily values become one value per week (Monday-Sunday, dated on the Sunday like NVE)
+WEEKLY_WEATHER = {
+    "Precipitation (mm/week)": ("precipitation_sum", "sum"),
+    "Rain (mm/week)": ("rain_sum", "sum"),
+    "Snowfall (cm/week)": ("snowfall_sum", "sum"),
+    "Mean temperature (°C)": ("temperature_2m_mean", "mean"),
+    "Maximum temperature (°C)": ("temperature_2m_max", "mean"),
+    "Minimum temperature (°C)": ("temperature_2m_min", "mean"),
+    "Mean wind speed (m/s)": ("wind_speed_10m_mean", "mean"),
+    "Solar radiation (MJ/m² per week)": ("shortwave_radiation_sum", "sum"),
+    "Evapotranspiration (mm/week)": ("et0_fao_evapotranspiration", "sum"),
+}
+
+
+def to_weekly(daily, label):
+    """One weather property per week, only for whole weeks."""
+    variable, how = WEEKLY_WEATHER[label]
+    weekly = daily[variable].resample("W-SUN")
+    values = weekly.sum() if how == "sum" else weekly.mean()
+    return values[weekly.count() == 7].rename(label)
+
+
+def missing_area_years(area, years):
+    """The years that area_daily_weather would have to download (about 130 calls each)."""
+    stored = {doc["year"] for doc in get_db()["weather_area_daily"].find(
+        {"area": area, "n_locations": AREA_LOCATIONS, "year": {"$in": list(years)}}, {"year": 1})}
+    return [y for y in years if y not in stored]

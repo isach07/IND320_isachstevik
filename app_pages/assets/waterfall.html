@@ -1,0 +1,52 @@
+<!-- Waterfall that covers the page for a moment when the Forecast page is opened from the
+     "Let's go" button on the home page. Plain HTML and CSS (no JavaScript): the water falls from the
+     top, flows for a moment and drains away downwards, and it never blocks clicks. -->
+<style>
+  .wf-overlay {
+    position: fixed; inset: 0; z-index: 999999; pointer-events: none;
+    animation: wf-cover 2.4s ease-in-out forwards;
+  }
+  /* the water: soft vertical bands in the app's blues, darker at the top where it falls over the edge */
+  .wf-water {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(180deg, rgba(16, 52, 96, 0.45), rgba(16, 52, 96, 0) 35%),
+      repeating-linear-gradient(90deg, #2B6CB0 0px, #3f86c9 17px, #2a78d6 29px, #5d9bd8 37px,
+                                       #3a7cc2 49px, #2f73bb 61px, #4a8fd2 73px, #2B6CB0 89px);
+  }
+  /* thin white streaks that run downwards, so the water moves */
+  .wf-streaks {
+    position: absolute; inset: 0;
+    background-image:
+      radial-gradient(1.2px 55px at 50% 50%, rgba(240, 248, 255, 0.75), rgba(240, 248, 255, 0)),
+      radial-gradient(1.6px 80px at 50% 50%, rgba(240, 248, 255, 0.55), rgba(240, 248, 255, 0)),
+      radial-gradient(1px 35px at 50% 50%, rgba(240, 248, 255, 0.8), rgba(240, 248, 255, 0));
+    background-size: 23px 120px, 41px 190px, 17px 90px;
+    background-position: 0 0, 11px 60px, 6px 30px;
+    animation: wf-run 0.5s linear infinite;
+  }
+  /* mist and foam where the water hits the bottom */
+  .wf-foam {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 170px;
+    background:
+      radial-gradient(closest-side, rgba(255, 255, 255, 0.95) 55%, rgba(255, 255, 255, 0)) 0 100% / 110px 80px repeat-x,
+      radial-gradient(closest-side, rgba(247, 251, 255, 0.9) 50%, rgba(255, 255, 255, 0)) 55px 85% / 130px 90px repeat-x,
+      linear-gradient(0deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.55) 35%, rgba(255, 255, 255, 0));
+    animation: wf-foam 0.7s ease-in-out infinite alternate;
+  }
+  /* fall in from the top, stay, then drain out at the bottom */
+  @keyframes wf-cover {
+    0%   { clip-path: inset(0 0 100% 0); }
+    30%  { clip-path: inset(0 0 0 0); }
+    65%  { clip-path: inset(0 0 0 0); }
+    100% { clip-path: inset(100% 0 0 0); }
+  }
+  @keyframes wf-run { to { background-position: 0 120px, 11px 250px, 6px 120px; } }
+  @keyframes wf-foam { to { transform: translateY(-8px); opacity: 0.85; } }
+  @media (prefers-reduced-motion: reduce) { .wf-overlay { display: none; } }
+</style>
+<div class="wf-overlay" aria-hidden="true">
+  <div class="wf-water"></div>
+  <div class="wf-streaks"></div>
+  <div class="wf-foam"></div>
+</div>

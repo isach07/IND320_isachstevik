@@ -1,0 +1,100 @@
+<svg class="nl-landscape" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice"
+     xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="Animated Norwegian landscape: snow on the mountains melts into a hydropower reservoir, and power lines carry the energy to a town">
+<style>
+  .nl-landscape { width: 100%; height: auto; display: block; border-radius: 0.5rem; }
+  .nl-cloud { animation: nl-drift 70s linear infinite; }
+  .nl-cloud.c2 { animation-duration: 95s; animation-delay: -40s; }
+  .nl-cloud.c3 { animation-duration: 120s; animation-delay: -75s; }
+  @keyframes nl-drift { from { transform: translateX(-260px); } to { transform: translateX(1300px); } }
+
+  /* one year in 16 s: winter drains the reservoir, the spring melt fills it */
+  .nl-water { animation: nl-level 16s ease-in-out infinite; }
+  @keyframes nl-level {
+    0% { transform: translateY(12px); } 25% { transform: translateY(30px); }
+    50% { transform: translateY(3px); } 75% { transform: translateY(0); } 100% { transform: translateY(12px); }
+  }
+  .nl-snow { animation: nl-snow 16s ease-in-out infinite; }
+  @keyframes nl-snow {
+    0%, 25% { opacity: 1; } 50% { opacity: 0.15; } 75% { opacity: 0.15; } 100% { opacity: 1; }
+  }
+  .nl-ripple { animation: nl-ripple 4s ease-in-out infinite; }
+  @keyframes nl-ripple { 50% { transform: translateX(14px); } }
+
+  .nl-outflow { stroke-dasharray: 3 5; animation: nl-flow 0.6s linear infinite; }
+  @keyframes nl-flow { to { stroke-dashoffset: -8; } }
+  .nl-cable { fill: none; stroke: #3a3f44; stroke-width: 0.9; }
+  .nl-pulse { fill: none; stroke: #ffc94a; stroke-width: 2.2; stroke-linecap: round;
+              stroke-dasharray: 5 140; animation: nl-pulse 2.4s linear infinite; }
+  @keyframes nl-pulse { from { stroke-dashoffset: 145; } to { stroke-dashoffset: 0; } }
+  .nl-pylon path { fill: none; stroke: #3a3f44; stroke-width: 1.3; stroke-linejoin: round; }
+  .nl-window { animation: nl-glow 2.4s ease-in-out infinite; }
+  @keyframes nl-glow { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+
+  .nl-season { font: 600 15px "Source Sans Pro", "Source Sans 3", sans-serif; fill: #FAF6EE; opacity: 0;
+               animation: nl-season 16s linear infinite; }
+  .nl-season.s2 { animation-delay: 4s; } .nl-season.s3 { animation-delay: 8s; } .nl-season.s4 { animation-delay: 12s; }
+  @keyframes nl-season { 0% { opacity: 0; } 3%, 22% { opacity: 1; } 25%, 100% { opacity: 0; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nl-landscape * { animation: none !important; }
+    .nl-season.s1 { opacity: 1; }
+  }
+</style>
+<defs>
+  <linearGradient id="nl-sky" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#9cc3e8"/><stop offset="1" stop-color="#f3ecdd"/>
+  </linearGradient>
+  <linearGradient id="nl-lake" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#3f86c9"/><stop offset="1" stop-color="#2B6CB0"/>
+  </linearGradient>
+  <clipPath id="nl-basin"><path d="M335,212 L612,212 L612,250 Q470,262 340,246 Z"/></clipPath>
+  <g id="nl-cloudshape">
+    <ellipse cx="0" cy="0" rx="38" ry="12"/><ellipse cx="-16" cy="-8" rx="18" ry="11"/><ellipse cx="12" cy="-10" rx="20" ry="13"/>
+  </g>
+</defs>
+
+<rect width="1200" height="300" fill="url(#nl-sky)"/>
+<circle cx="1010" cy="58" r="26" fill="#ffe7a8" opacity="0.9"/>
+<g fill="#ffffff" opacity="0.85">
+  <use href="#nl-cloudshape" class="nl-cloud" x="0" y="45"/>
+  <use href="#nl-cloudshape" class="nl-cloud c2" x="0" y="80" transform="scale(0.8)"/>
+  <use href="#nl-cloudshape" class="nl-cloud c3" x="0" y="30"/>
+</g>
+
+<path d="M0,160 L0,160 L70,110 L150,150 L240,72 L330,140 L420,95 L510,150 L600,82 L700,140 L800,62 L900,132 L1000,88 L1100,140 L1170,100 L1200,120 L1200,160 L1200,300 L0,300 Z" fill="#b4c3d3"/>
+<g class="nl-snow" fill="#f7f9fb" opacity="1"><polygon points="240.0,72.0 219.2,90.0 228.1,83.6 237.1,90.0 246.0,80.2 254.9,90.1 263.8,90.0"/><polygon points="420.0,95.0 384.0,113.0 397.1,106.7 410.2,111.9 423.3,103.1 436.4,112.8 449.5,113.0"/><polygon points="600.0,82.0 576.2,100.0 587.1,90.4 598.1,100.1 609.1,92.6 620.1,96.4 631.0,100.0"/><polygon points="800.0,62.0 776.9,80.0 786.7,70.6 796.4,78.7 806.2,72.2 816.0,79.2 825.7,80.0"/><polygon points="1000.0,88.0 959.1,106.0 974.2,99.6 989.3,103.1 1004.4,95.9 1019.5,105.9 1034.6,106.0"/><polygon points="1170.0,100.0 1138.5,118.0 1150.2,108.0 1161.9,117.7 1173.6,108.4 1185.3,117.4 1197.0,118.0"/></g>
+<path d="M0,215 L0,215 L60,168 L120,200 L205,118 L300,200 L340,212 L610,212 L660,188 L760,108 L850,180 L935,128 L1030,192 L1110,142 L1200,185 L1200,215 L1200,300 L0,300 Z" fill="#6b7f93"/>
+<g class="nl-snow" fill="#ffffff"><polygon points="205.0,118.0 178.0,144.0 189.5,133.4 200.9,142.9 212.3,132.5 223.7,142.9 235.1,144.0"/><polygon points="760.0,108.0 727.5,134.0 740.5,121.1 753.5,132.1 766.5,121.6 779.5,133.0 792.5,134.0"/><polygon points="935.0,128.0 892.5,154.0 908.7,143.4 924.9,151.3 941.2,142.4 957.4,149.5 973.6,154.0"/><polygon points="1110.0,142.0 1068.4,168.0 1087.6,154.4 1106.8,165.8 1126.0,156.3 1145.2,166.9 1164.4,168.0"/></g>
+
+<!-- reservoir: the bare shore shows when the water is low -->
+<path d="M335,212 L612,212 L612,250 Q470,262 340,246 Z" fill="#9d927d"/>
+<g clip-path="url(#nl-basin)">
+  <g class="nl-water">
+    <rect x="320" y="212" width="300" height="60" fill="url(#nl-lake)"/>
+    <g class="nl-ripple" stroke="#cfe3f6" stroke-width="1" opacity="0.6" stroke-linecap="round">
+      <path d="M380,220 h26 M450,226 h18 M520,219 h30 M410,234 h20 M560,231 h16"/>
+    </g>
+  </g>
+</g>
+<!-- dam and power station -->
+<path d="M606,208 L618,208 L626,252 L600,252 Z" fill="#d9d3c4" stroke="#a79f8e" stroke-width="1"/>
+<path class="nl-outflow" d="M624,246 Q632,248 636,250" stroke="#cfe3f6" stroke-width="2" fill="none"/>
+<rect x="632" y="236" width="24" height="16" fill="#d9d3c4" stroke="#a79f8e" stroke-width="1"/>
+<rect x="636" y="230" width="8" height="6" fill="#a79f8e"/>
+
+<path d="M0,258.5 L10,259.7 L20,260.9 L30,262.0 L40,262.9 L50,263.6 L60,264.2 L70,264.6 L80,264.7 L90,264.6 L100,264.3 L110,263.9 L120,263.2 L130,262.4 L140,261.5 L150,260.6 L160,259.6 L170,258.6 L180,257.6 L190,256.8 L200,256.0 L210,255.4 L220,254.9 L230,254.6 L240,254.4 L250,254.3 L260,254.4 L270,254.6 L280,254.8 L290,255.1 L300,255.4 L310,255.7 L320,255.9 L330,256.0 L340,255.9 L350,255.7 L360,255.4 L370,254.9 L380,254.2 L390,253.3 L400,252.3 L410,251.1 L420,249.9 L430,248.6 L440,247.2 L450,245.9 L460,244.6 L470,243.4 L480,242.4 L490,241.4 L500,240.7 L510,240.2 L520,239.9 L530,239.8 L540,239.9 L550,240.2 L560,240.7 L570,241.4 L580,242.1 L590,242.9 L600,243.8 L610,244.7 L620,245.6 L630,246.3 L640,247.0 L650,247.6 L660,248.0 L670,248.3 L680,248.5 L690,248.5 L700,248.4 L710,248.1 L720,247.8 L730,247.5 L740,247.2 L750,246.8 L760,246.6 L770,246.4 L780,246.4 L790,246.5 L800,246.8 L810,247.3 L820,247.9 L830,248.7 L840,249.7 L850,250.9 L860,252.1 L870,253.5 L880,254.9 L890,256.3 L900,257.6 L910,258.9 L920,260.1 L930,261.1 L940,262.0 L950,262.7 L960,263.1 L970,263.4 L980,263.4 L990,263.3 L1000,263.0 L1010,262.5 L1020,261.9 L1030,261.1 L1040,260.4 L1050,259.6 L1060,258.9 L1070,258.2 L1080,257.6 L1090,257.1 L1100,256.7 L1110,256.5 L1120,256.4 L1130,256.4 L1140,256.6 L1150,256.9 L1160,257.3 L1170,257.7 L1180,258.1 L1190,258.5 L1200,258.8 L1200,300 L0,300 Z" fill="#3f5a4a"/>
+<g fill="#2c4437"><path d="M36.8,243.4 L29.6,266.6 L44.0,266.6 Z"/><path d="M62.6,252.1 L57.5,268.3 L67.7,268.3 Z"/><path d="M106.6,245.8 L99.6,268.1 L113.5,268.1 Z"/><path d="M130.7,250.4 L125.7,266.4 L135.7,266.4 Z"/><path d="M141.7,244.0 L135.1,265.4 L148.4,265.4 Z"/><path d="M165.3,248.2 L160.6,263.0 L169.9,263.0 Z"/><path d="M179.3,242.6 L173.3,261.7 L185.2,261.7 Z"/><path d="M191.1,245.8 L186.5,260.7 L195.8,260.7 Z"/><path d="M217.2,239.6 L211.1,259.0 L223.3,259.0 Z"/><path d="M226.6,238.9 L220.4,258.7 L232.8,258.7 Z"/><path d="M250.6,239.3 L244.6,258.3 L256.6,258.3 Z"/><path d="M262.0,240.1 L256.2,258.4 L267.7,258.4 Z"/><path d="M308.6,242.8 L303.3,259.6 L313.8,259.6 Z"/><path d="M331.4,242.5 L326.0,260.0 L336.9,260.0 Z"/><path d="M397.3,239.4 L391.9,256.6 L402.6,256.6 Z"/><path d="M416.7,239.3 L412.0,254.3 L421.4,254.3 Z"/><path d="M453.2,233.1 L448.1,249.5 L458.3,249.5 Z"/><path d="M503.4,221.0 L496.0,244.5 L510.7,244.5 Z"/><path d="M520.8,229.7 L516.4,243.9 L525.3,243.9 Z"/><path d="M532.5,222.1 L525.7,243.8 L539.3,243.8 Z"/><path d="M550.9,224.1 L544.6,244.3 L557.2,244.3 Z"/><path d="M582.3,230.9 L577.5,246.3 L587.1,246.3 Z"/><path d="M684.0,234.9 L678.5,252.5 L689.5,252.5 Z"/><path d="M717.2,233.7 L711.5,251.9 L722.9,251.9 Z"/><path d="M784.5,233.9 L779.3,250.4 L789.6,250.4 Z"/><path d="M841.4,235.8 L835.7,253.9 L847.0,253.9 Z"/><path d="M863.9,240.2 L858.7,256.6 L869.0,256.6 Z"/><path d="M913.7,244.4 L907.7,263.4 L919.6,263.4 Z"/><path d="M973.8,252.0 L969.0,267.4 L978.6,267.4 Z"/><path d="M988.6,247.7 L982.5,267.3 L994.8,267.3 Z"/><path d="M1016.9,243.0 L1009.7,266.1 L1024.1,266.1 Z"/><path d="M1029.8,243.7 L1023.1,265.2 L1036.5,265.2 Z"/><path d="M1083.5,238.1 L1076.2,261.4 L1090.7,261.4 Z"/><path d="M1094.0,238.9 L1087.2,260.9 L1100.9,260.9 Z"/></g>
+<rect x="1110" y="245.4" width="22" height="14" fill="#b5523b"/><path d="M1108,245.4 L1121.0,237.4 L1134,245.4 Z" fill="#5a3a30"/><rect class="nl-window" style="animation-delay:0.00s" x="1118.0" y="249.4" width="6" height="5" fill="#ffd36b"/><rect x="1136" y="241.7" width="18" height="18" fill="#b5523b"/><path d="M1134,241.7 L1145.0,233.7 L1156,241.7 Z" fill="#5a3a30"/><rect class="nl-window" style="animation-delay:0.35s" x="1142.0" y="245.7" width="6" height="5" fill="#ffd36b"/><rect x="1158" y="248.7" width="24" height="12" fill="#b5523b"/><path d="M1156,248.7 L1170.0,240.7 L1184,248.7 Z" fill="#5a3a30"/><rect class="nl-window" style="animation-delay:0.70s" x="1167.0" y="252.7" width="6" height="5" fill="#ffd36b"/><rect x="1186" y="245.6" width="16" height="16" fill="#b5523b"/><path d="M1184,245.6 L1194.0,237.6 L1204,245.6 Z" fill="#5a3a30"/><rect class="nl-window" style="animation-delay:1.05s" x="1191.0" y="249.6" width="6" height="5" fill="#ffd36b"/>
+
+<g class="nl-pylon"><path d="M693,248.35021109843342 L698,202.35021109843342 L702,202.35021109843342 L707,248.35021109843342 M694,242.35021109843342 L704,224.35021109843342 M706,242.35021109843342 L696,224.35021109843342 M695.5,224.35021109843342 L704.5,224.35021109843342 M697,224.35021109843342 L702.5,210.35021109843342 M703,224.35021109843342 L697.5,210.35021109843342 M686,210.35021109843342 L714,210.35021109843342 M691,210.35021109843342 L698,204.35021109843342 M709,210.35021109843342 L702,204.35021109843342 M698,202.35021109843342 L700,197.35021109843342 L702,202.35021109843342"/></g><g class="nl-pylon"><path d="M808,247.55912101777093 L813,201.55912101777093 L817,201.55912101777093 L822,247.55912101777093 M809,241.55912101777093 L819,223.55912101777093 M821,241.55912101777093 L811,223.55912101777093 M810.5,223.55912101777093 L819.5,223.55912101777093 M812,223.55912101777093 L817.5,209.55912101777093 M818,223.55912101777093 L812.5,209.55912101777093 M801,209.55912101777093 L829,209.55912101777093 M806,209.55912101777093 L813,203.55912101777093 M824,209.55912101777093 L817,203.55912101777093 M813,201.55912101777093 L815,196.55912101777093 L817,201.55912101777093"/></g><g class="nl-pylon"><path d="M923,261.1376254220417 L928,215.1376254220417 L932,215.1376254220417 L937,261.1376254220417 M924,255.1376254220417 L934,237.1376254220417 M936,255.1376254220417 L926,237.1376254220417 M925.5,237.1376254220417 L934.5,237.1376254220417 M927,237.1376254220417 L932.5,223.1376254220417 M933,237.1376254220417 L927.5,223.1376254220417 M916,223.1376254220417 L944,223.1376254220417 M921,223.1376254220417 L928,217.1376254220417 M939,223.1376254220417 L932,217.1376254220417 M928,215.1376254220417 L930,210.1376254220417 L932,215.1376254220417"/></g><g class="nl-pylon"><path d="M1038,260.00366359349505 L1043,214.00366359349505 L1047,214.00366359349505 L1052,260.00366359349505 M1039,254.00366359349505 L1049,236.00366359349505 M1051,254.00366359349505 L1041,236.00366359349505 M1040.5,236.00366359349505 L1049.5,236.00366359349505 M1042,236.00366359349505 L1047.5,222.00366359349505 M1048,236.00366359349505 L1042.5,222.00366359349505 M1031,222.00366359349505 L1059,222.00366359349505 M1036,222.00366359349505 L1043,216.00366359349505 M1054,222.00366359349505 L1047,216.00366359349505 M1043,214.00366359349505 L1045,209.00366359349505 L1047,214.00366359349505"/></g>
+<path class="nl-cable" d="M646.0,234.0 Q666.5,243.0 687.0,210.4"/><path class="nl-cable" d="M654.0,234.0 Q683.5,243.0 713.0,210.4"/><path class="nl-cable" d="M687.0,210.4 Q744.5,219.4 802.0,209.6"/><path class="nl-cable" d="M713.0,210.4 Q770.5,219.4 828.0,209.6"/><path class="nl-cable" d="M802.0,209.6 Q859.5,232.1 917.0,223.1"/><path class="nl-cable" d="M828.0,209.6 Q885.5,232.1 943.0,223.1"/><path class="nl-cable" d="M917.0,223.1 Q974.5,232.1 1032.0,222.0"/><path class="nl-cable" d="M943.0,223.1 Q1000.5,232.1 1058.0,222.0"/><path class="nl-cable" d="M1032.0,222.0 Q1073.0,243.5 1114.0,236.5"/><path class="nl-cable" d="M1058.0,222.0 Q1091.0,243.5 1124.0,236.5"/>
+<path class="nl-pulse" style="animation-delay:0.0s" d="M646.0,234.0 Q666.5,243.0 687.0,210.4"/><path class="nl-pulse" style="animation-delay:0.0s" d="M654.0,234.0 Q683.5,243.0 713.0,210.4"/><path class="nl-pulse" style="animation-delay:0.3s" d="M687.0,210.4 Q744.5,219.4 802.0,209.6"/><path class="nl-pulse" style="animation-delay:0.3s" d="M713.0,210.4 Q770.5,219.4 828.0,209.6"/><path class="nl-pulse" style="animation-delay:0.6s" d="M802.0,209.6 Q859.5,232.1 917.0,223.1"/><path class="nl-pulse" style="animation-delay:0.6s" d="M828.0,209.6 Q885.5,232.1 943.0,223.1"/><path class="nl-pulse" style="animation-delay:0.9s" d="M917.0,223.1 Q974.5,232.1 1032.0,222.0"/><path class="nl-pulse" style="animation-delay:0.9s" d="M943.0,223.1 Q1000.5,232.1 1058.0,222.0"/><path class="nl-pulse" style="animation-delay:1.2s" d="M1032.0,222.0 Q1073.0,243.5 1114.0,236.5"/><path class="nl-pulse" style="animation-delay:1.2s" d="M1058.0,222.0 Q1091.0,243.5 1124.0,236.5"/>
+
+<g transform="translate(22,288)">
+  <text class="nl-season s1">Winter: the reservoirs drain</text>
+  <text class="nl-season s2">Spring: the snow melts</text>
+  <text class="nl-season s3">Summer: the reservoirs fill up</text>
+  <text class="nl-season s4">Autumn: snow returns to the mountains</text>
+</g>
+</svg>

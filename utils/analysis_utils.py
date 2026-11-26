@@ -28,19 +28,25 @@ def stl_decompose(series, seasonal=13, trend=105, robust=True, period=WEEKS_PER_
     })
 
 
-# spectrogram of a weekly series. Frequencies are in cycles per year (52 samples per year).
-# returns the frequencies, the date at the centre of each window and the power in dB.
-def spectrogram_weekly(series, window=156, overlap=130):
+# spectrogram of a regular series. Frequencies are in cycles per year, so weekly series use
+# samples_per_year=52 and daily series 365. Returns the frequencies, the date at the centre of
+# each window and the power in dB.
+def spectrogram_series(series, window, overlap, samples_per_year):
     if not 2 <= window <= len(series):
-        raise ValueError(f"window must be between 2 and {len(series)} weeks")
+        raise ValueError(f"window must be between 2 and {len(series)} steps")
     if not 0 <= overlap < window:
         raise ValueError("overlap must be at least 0 and less than window")
     frequencies, times, power = spectrogram(
-        series.to_numpy(), fs=WEEKS_PER_YEAR, nperseg=window, noverlap=overlap
+        series.to_numpy(), fs=samples_per_year, nperseg=window, noverlap=overlap
     )
     power_db = 10 * np.log10(power + 1e-12)  # avoid log(0)
-    window_centres = series.index[0] + pd.to_timedelta(times * WEEKS_PER_YEAR * 7, unit="D")  # years -> dates
+    window_centres = series.index[0] + pd.to_timedelta(times * 365.25, unit="D")  # years -> dates
     return frequencies, window_centres, power_db
+
+
+# the weekly version used for the reservoirs (52 samples per year)
+def spectrogram_weekly(series, window=156, overlap=130):
+    return spectrogram_series(series, window, overlap, WEEKS_PER_YEAR)
 
 
 # SPC outliers in a daily series (precipitation in the app).
@@ -121,3 +127,13 @@ def lof_anomalies(daily, proportion=0.01, n_neighbors=20):
         "lof_threshold": float(-lof.offset_),
     }
     return result, summary
+
+
+# Sliding window correlation between a weather series and a reservoir series (same index).
+# The weather is moved `lag` steps later, so a positive lag compares the reservoirs with the weather
+# `lag` weeks before. Each window is centred on its date.
+def sliding_window_correlation(weather, reservoir, window=26, lag=0):
+    if window < 3:
+        raise ValueError("window must be at least 3")
+    shifted = weather.shift(lag)
+    return shifted.rolling(window, center=True, min_periods=window).corr(reservoir)

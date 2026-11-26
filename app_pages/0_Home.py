@@ -1,6 +1,11 @@
+from pathlib import Path
+
 import streamlit as st
 import pandas as pd
-from data_utils import load_data
+import requests
+from utils.data_utils import AREAS, load_data
+from utils.mongo_utils import load_crossborder
+from utils.weather_utils import recent_weather
 
 st.set_page_config(page_title="Home", layout="wide")
 
@@ -14,80 +19,114 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# animated landscape: snow melts into the reservoir and power lines carry the energy to a town.
+# It is a plain SVG with CSS animations (made once with a small script), so it needs no JavaScript.
+st.image(str(Path(__file__).parent / "assets" / "landscape.svg"), width="stretch")
+
 df = load_data()
-norway = df[df["area"] == "NO 0"] # keep only the rows for Norway as a whole
-latest = norway.iloc[-1] # is the last row for Norway, which is the latest week
-# median fill ratio for the same week in earlier years
-same_week = norway[(norway["iso_week"] == latest["iso_week"]) & (norway["iso_year"] < latest["iso_year"])]
-median_same_week = same_week["fill_ratio"].median()
 
 st.write(
-    "This app looks at how full Norway's hydropower reservoirs are. The data is weekly reservoir "
-    "statistics from NVE (Norwegian Water Resources and Energy Directorate): for every week since "
-    f"{df['date'].min():%Y}, it gives how much energy is stored in the reservoirs, both in TWh and "
-    "as a share of the total capacity."
+    "Norway's power comes almost entirely from water stored in its hydropower reservoirs. Every year "
+    "they follow the same cycle: they drain through the winter, when demand is high and the rivers are "
+    "frozen, and refill when the snow melts in late spring and summer."
 )
 st.write(
-    "Reservoirs follow the same cycle every year. They drain through the winter, when demand is high "
-    "and rivers are frozen, reach their lowest point around April–May, and refill when the snow melts "
-    "in late spring and summer."
+    "That cycle is under pressure. A changing climate brings less snow in the mountains and smaller "
+    "glaciers, so the reservoirs can struggle to fill up again. At the same time, more of society is "
+    "moving over to clean electricity, and Norway exports more power to Europe, which has needed "
+    "energy even more since the war in Ukraine. More demand from less predictable water makes a good "
+    "overview of the changes important."
 )
-
-st.subheader("Key numbers")
-c1, c2, c3, c4 = st.columns(4)
-c1.metric(
-    f"Norway fill ratio, week {latest['iso_week']} {latest['iso_year']}",
-    f"{latest['fill_ratio']:.1%}",
-    f"{(latest['fill_ratio'] - median_same_week) * 100:+.1f} pp vs. median",
-)
-c2.metric("Total capacity", f"{latest['capacity_twh']:.1f} TWh")
-c3.metric("Period", f"{df['date'].min():%Y}–{df['date'].max():%Y}")
-c4.metric("Rows", f"{len(df):,}", f"{df['area'].nunique()} areas, {norway['date'].nunique():,} weeks", delta_color="off")
-
-st.subheader("Areas")
 st.write(
-    "Each week has one row per area. The same country is split up in two different ways, so the "
-    "areas overlap:"
+    "This app is a tool for investigating that: how full the reservoirs are (weekly statistics from NVE "
+    f"since {df['date'].min():%Y}), the weather that fills them (ERA5 from Open-Meteo), and the power "
+    "that flows to and from Europe (ENTSO-E)."
 )
+
+# A big button in the middle of the page that leads to the Forecast page. The CSS targets the
+# button through its key (Streamlit gives the element the class "st-key-lets_go").
 st.markdown(
-    "- **NO 0** — Norway as a whole.\n"
-    "- **EL 1–5** — the five electricity price areas (NO1–NO5). Together they make up all of Norway.\n"
-    "- **VASS 1–3** — three regional areas. These also add up to all of Norway.\n\n"
-    "Because of the overlap, rows from different area types should not be added together."
+    """
+    <style>
+      .st-key-lets_go button { font-size: 1.35rem; font-weight: 600; padding: 0.9rem 2.8rem; min-height: 3.6rem; }
+      .st-key-lets_go button p { font-size: 1.35rem; }
+    </style>
+    <p style="text-align: center; font-size: 1.25rem; margin: 1.2rem 0 0.4rem;">
+      Start by exploring the future of the water levels
+    </p>
+    """,
+    unsafe_allow_html=True,
 )
+_, middle, _ = st.columns([1, 1, 1])
+# the button sets a flag, so the Forecast page knows to start with the waterfall animation
+if middle.button("Let's go", key="lets_go", type="primary", icon=":material/water:", width="stretch",
+                 help="See the forecast for the coming months"):
+    st.session_state["waterfall"] = True
+    st.switch_page("app_pages/9_Forecast.py")
 
-summary = df.groupby("area").agg(
-    capacity_twh=("capacity_twh", "first"),
-    mean_fill_ratio=("fill_ratio", "mean"),
-    min_fill_ratio=("fill_ratio", "min"),
-    max_fill_ratio=("fill_ratio", "max"),
-    latest_fill_ratio=("fill_ratio", "last"),
+# ---- the last 30 days for the area chosen in the sidebar ----
+area = st.session_state["area"]
+st.subheader(f"Last 30 days in {AREAS[area]}")
+
+# reservoirs: the weeks in the last 30 days, and the change since the week before them
+fill = df[df["area"] == area].set_index("date")["fill_ratio"] * 100
+recent_fill = fill[fill.index > fill.index.max() - pd.Timedelta(days=30)]
+fill_change = recent_fill.iloc[-1] - fill[fill.index < recent_fill.index.min()].iloc[-1]
+
+# weather: daily average over a few of the area's sampled locations
+try:
+    weather = recent_weather(area)
+except requests.RequestException:
+    weather = None
+
+# cross-border flows: the price area's own connections; for Norway and the VASS areas, all of them
+flows = load_crossborder()
+if not flows.empty:
+    if area.startswith("EL"):
+        flows = flows[flows["connection"].str.startswith(f"NO_{area[-1]}-")]
+    flows = flows[flows["date"] > flows["date"].max() - pd.Timedelta(days=30)]
+    daily_flow = flows.pivot_table(index="date", columns="direction", values="flow_mwh", aggfunc="sum") / 1000  # GWh
+
+c1, c2, c3, c4, c5 = st.columns(5)
+c1.metric(
+    f"Fill ratio, week {fill.index.max():%V}",
+    f"{recent_fill.iloc[-1]:.1f} %",
+    f"{fill_change:+.1f} pp in 30 days",
+    chart_data=recent_fill.round(1), border=True,
 )
-st.dataframe(
-    summary,
-    column_config={
-        "capacity_twh": st.column_config.NumberColumn("Capacity (TWh)", format="%.1f"),
-        "mean_fill_ratio": st.column_config.NumberColumn("Mean fill", format="percent"),
-        "min_fill_ratio": st.column_config.NumberColumn("Lowest fill", format="percent"),
-        "max_fill_ratio": st.column_config.NumberColumn("Highest fill", format="percent"),
-        "latest_fill_ratio": st.column_config.NumberColumn("Latest fill", format="percent"),
-    },
+if weather is not None:
+    c2.metric("Mean temperature", f"{weather['temperature_2m_mean'].mean():.1f} °C",
+              chart_data=weather["temperature_2m_mean"].round(1), border=True)
+    c3.metric("Precipitation", f"{weather['precipitation_sum'].sum():.0f} mm",
+              f"of which {weather['snowfall_sum'].sum():.0f} cm snow", delta_color="off", delta_arrow="off",
+              chart_data=weather["precipitation_sum"].round(1), chart_type="bar", border=True)
+else:
+    c2.metric("Mean temperature", "–", border=True)
+    c3.metric("Precipitation", "–", border=True)
+if not flows.empty:
+    for col, direction, label in [(c4, "into Norway", "Power in (import)"), (c5, "out of Norway", "Power out (export)")]:
+        col.metric(label, f"{daily_flow[direction].sum() / 1000:.2f} TWh",
+                   chart_data=daily_flow[direction].round(1), chart_type="area", border=True)
+else:
+    c4.metric("Power in (import)", "–", border=True)
+    c5.metric("Power out (export)", "–", border=True)
+
+notes = [f"Reservoirs: NVE, weekly, up to {fill.index.max():%d.%m.%Y}."]
+notes.append("Weather: Open-Meteo, daily average over 5 of the area's sampled locations."
+             if weather is not None else "Weather: Open-Meteo did not answer, try again later.")
+if flows.empty:
+    notes.append("Power: this area has no connections abroad." if area.startswith("EL") else "Power: no cross-border data in MongoDB yet.")
+else:
+    scope = "this area's connections abroad" if area.startswith("EL") else "all connections abroad"
+    notes.append(f"Power: ENTSO-E, {scope}, {flows['date'].min():%d.%m}–{flows['date'].max():%d.%m.%Y} (the latest stored data).")
+st.caption(" ".join(notes))
+
+st.subheader("What you can explore")
+st.markdown(
+    "- **Map:** the price and water areas, coloured by fill ratio or weather for any week.\n"
+    "- **Forecast:** the fill ratio for the coming months, with confidence intervals.\n"
+    "- **Explore the data:** one page per data source (reservoirs, weather and cross-border flows), "
+    "each with tabs for the raw data, the seasonal pattern (STL and spectrogram) and unusual values "
+    "(outliers and anomalies). The weather page also shows how the weather relates to the reservoirs.\n\n"
+    "Choose the area in the sidebar; it is used on every page."
 )
-
-st.subheader("Columns")
-st.table(pd.DataFrame(
-    [
-        ("dato_Id", "date", "Date of the measurement (one per week)"),
-        ("omrType / omrnr", "area_type / area_number", "Area type (NO, EL, VASS) and number"),
-        ("iso_aar / iso_uke", "iso_year / iso_week", "ISO year and week number"),
-        ("fyllingsgrad", "fill_ratio", "Share of capacity that is filled (0–1)"),
-        ("kapasitet_TWh", "capacity_twh", "Total reservoir capacity in the area, in TWh"),
-        ("fylling_TWh", "filling_twh", "Energy stored in the reservoirs, in TWh"),
-        ("fyllingsgrad_forrige_uke", "fill_ratio_prev_week", "Fill ratio the week before"),
-        ("endring_fyllingsgrad", "fill_ratio_change", "Change in fill ratio since last week"),
-        ("neste_Publiseringsdato", "next_publish_date", "When the next week is published (blank for older rows)"),
-    ],
-    columns=["Original column", "Name in this app", "Meaning"],
-).set_index("Original column"))
-
-st.caption("Use the sidebar to see the data table and plots.")
